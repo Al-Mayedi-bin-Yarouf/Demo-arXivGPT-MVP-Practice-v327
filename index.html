@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>arXivGPT MVP — Medical + AI Paper Analyser</title>
+<style>
+  :root{--bg:#f7f7f4;--panel:#ffffff;--ink:#1d1d1f;--muted:#6e6e73;--line:#deded6;--brand:#111827;--accent:#0f766e;--accentText:#fff;--soft:#eef2f2;--warn:#b45309;--bad:#b91c1c;--good:#047857;--shadow:0 18px 40px rgba(0,0,0,.07);--focus:#2563eb}
+  [data-theme="dark"]{--bg:#0d0f12;--panel:#151820;--ink:#f7f7f4;--muted:#a5acb8;--line:#2a2f3a;--brand:#f7f7f4;--accent:#5eead4;--accentText:#061413;--soft:#202733;--shadow:0 18px 40px rgba(0,0,0,.35);--focus:#93c5fd}
+  [data-theme="contrast"]{--bg:#000;--panel:#000;--ink:#fff;--muted:#fff;--line:#fff;--brand:#fff;--accent:#ffff00;--accentText:#000;--soft:#111;--shadow:none;--focus:#ffff00}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;overflow:hidden}
+  button,input,select,textarea{font:inherit} button{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:14px;padding:9px 12px;transition:.15s} button:hover{transform:translateY(-1px);box-shadow:var(--shadow)} button:focus,input:focus,select:focus,textarea:focus{outline:3px solid var(--focus);outline-offset:2px}
+  .app{height:100vh;display:grid;grid-template-columns:280px minmax(360px,1fr) 390px;gap:10px;padding:10px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);min-height:0;overflow:hidden}.side,.chat{display:flex;flex-direction:column}.head{padding:16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between}.logo{font-weight:760;letter-spacing:-.03em;font-size:20px}.pill{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:4px 8px;color:var(--muted)}
+  .body{padding:14px;overflow:auto}.drop{border:1.5px dashed var(--line);border-radius:20px;padding:16px;text-align:center;background:var(--soft);color:var(--muted);display:block}.drop.drag{border-color:var(--accent);background:rgba(20,184,166,.12);color:var(--ink)}.drop input{display:none}.tiny{font-size:12px;color:var(--muted)}.row{display:flex;gap:8px;align-items:center}.stack{display:grid;gap:10px}.paper{border:1px solid var(--line);border-radius:16px;padding:10px;margin:8px 0;background:var(--panel)}.paper.active{outline:2px solid var(--accent)}.paper-title{font-weight:650;word-break:break-word}.viewer{display:grid;grid-template-rows:auto 1fr;height:100%}.toolbar{padding:12px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:space-between}.viewer iframe{width:100%;height:100%;border:0;background:#444}.empty{display:grid;place-items:center;height:100%;color:var(--muted);text-align:center;padding:30px}
+  .api{display:grid;grid-template-columns:1fr auto;gap:8px}.api input,.api select,.ask textarea,.search,#copilotEndpoint{width:100%;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--bg);color:var(--ink);outline:none}.status{display:inline-flex;gap:6px;align-items:center}.dot{width:9px;height:9px;border-radius:50%;background:var(--bad)}.dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}
+  .tabs{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line)}.tab{flex:1}.tab.on{background:var(--brand);color:var(--bg)}[data-theme="contrast"] .tab.on{background:#fff;color:#000;border-color:#fff}.messages{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}.msg{border:1px solid var(--line);border-radius:18px;padding:11px 12px;max-width:94%;white-space:pre-wrap}.user{align-self:flex-end;background:var(--brand);color:var(--bg)}[data-theme="contrast"] .user{background:#fff;color:#000}.bot{align-self:flex-start;background:var(--soft)}.ask{padding:12px;border-top:1px solid var(--line);display:grid;gap:8px}.ask textarea{min-height:70px;resize:vertical}.primary{background:var(--brand);color:var(--bg)}[data-theme="contrast"] .primary{background:#fff;color:#000}.accent{background:var(--accent);color:var(--accentText);border-color:var(--accent);font-weight:750}[data-theme="contrast"] .accent{box-shadow:0 0 0 2px #000 inset}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.glossary dt{font-weight:750}.glossary dd{margin:0 0 10px;color:var(--muted)}mark{background:rgba(20,184,166,.25);color:inherit;border-radius:4px;padding:0 2px}.rtl{direction:rtl;text-align:right}.refs li{margin:6px 0}.kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:var(--soft);padding:2px 6px;border-radius:8px}.warnbox{border:1px solid var(--warn);border-radius:14px;padding:10px;color:var(--muted)}
+  @media(max-width:1050px){.app{grid-template-columns:1fr;overflow:auto}.panel{min-height:390px}body{overflow:auto}.app{height:auto}.viewer{height:80vh}}
+</style>
+</head>
+<body data-theme="classic">
+<div class="app">
+  <aside class="panel side">
+    <div class="head"><div><div class="logo">arXivGPT</div><div class="tiny">Medical + Artificial Intelligence</div></div><span class="pill">MVP v327</span></div>
+    <div class="body stack">
+      <label class="drop" id="drop"><input id="fileInput" type="file" accept="application/pdf" multiple><b>Upload PDFs</b><br><span class="tiny">Click to browse or drag PDFs here</span></label>
+      <input id="paperSearch" class="search" placeholder="Filter uploaded papers…" />
+      <div class="row"><input id="selectAll" type="checkbox"><label for="selectAll">Select all for chat</label></div>
+      <div id="paperList"></div>
+      <hr style="width:100%;border:0;border-top:1px solid var(--line)">
+      <label>Domain</label>
+      <select id="domain"><option value="MD">Medicine (patient-friendly)</option><option value="AI" selected>Artificial Intelligence (beginner-friendly)</option></select>
+      <label>Language</label>
+      <select id="lang"><option>English</option><option>Arabic</option><option>French</option><option>Amharic</option><option>Chinese</option></select>
+      <label>Accessibility</label>
+      <select id="theme"><option value="classic">Classic</option><option value="dark">Dark</option><option value="contrast">High contrast</option></select>
+      <div class="warnbox tiny"><b>v2 fix:</b> Gemini now receives the actual PDFs as inline PDF data. Local text extraction is only a fallback for metadata/glimpses.</div>
+    </div>
+  </aside>
+
+  <main class="panel viewer">
+    <div class="toolbar">
+      <div><b id="viewerTitle">No paper selected</b><div class="tiny" id="viewerMeta">Upload a PDF to begin</div></div>
+      <div class="row"><button id="prevBtn">‹</button><button id="nextBtn">›</button><button id="summBtn" class="accent">Simplify</button></div>
+    </div>
+    <div id="viewerPane" class="empty"><div><h2>Minimal paper reader</h2><p>Select a PDF on the left. Gemini can answer from the actual uploaded PDFs when an API key is connected.</p></div></div>
+  </main>
+
+  <section class="panel chat">
+    <div class="head"><div><b>Gemini Flash 2.5 Chat</b><div class="status tiny"><span id="statusDot" class="dot"></span><span id="statusText">No API key</span></div></div><span class="pill">PDF-native</span></div>
+    <div class="body stack" style="padding-bottom:8px">
+      <div class="api"><input id="apiKey" type="password" placeholder="Gemini API key"><button id="testKey">Test</button></div>
+      <input id="copilotEndpoint" placeholder="Optional Copilot/Azure OpenAI fallback endpoint" />
+    </div>
+    <div class="tabs"><button class="tab on" data-tab="chatTab">Chat</button><button class="tab" data-tab="glossTab">Glossary</button><button class="tab" data-tab="citeTab">Citations</button></div>
+    <div id="chatTab" class="messages tabpane"></div>
+    <div id="glossTab" class="messages tabpane" style="display:none"><button id="glossBtn" class="primary">Generate glossary</button><dl id="glossary" class="glossary"></dl></div>
+    <div id="citeTab" class="messages tabpane" style="display:none"><button id="citeBtn" class="primary">Track references</button><ol id="refs" class="refs"></ol></div>
+    <div class="ask">
+      <textarea id="question" placeholder="Ask: What did the selected papers find? Cite pages."></textarea>
+      <div class="grid2"><button id="askBtn" class="primary">Ask selected papers</button><button id="fallbackBtn">General explanation</button></div>
+    </div>
+  </section>
+</div>
+<script>
+const GEMINI_MODEL='gemini-2.5-flash';
+const MAX_INLINE_PDF_BYTES=48*1024*1024; // keep below PDF inline limits and browser payload overhead
+const state={papers:[],active:-1};
+const $=id=>document.getElementById(id);
+const dictionaries={
+ MD:{'randomized':'A study design that assigns people to groups by chance.','cohort':'A group of people followed over time.','endpoint':'The health result measured by a study.','hazard ratio':'A comparison of how often an event happens over time.','confidence interval':'A range showing uncertainty around a result.','placebo':'An inactive treatment used for comparison.','adverse event':'An unwanted health effect during a study.','biomarker':'A measurable sign of a body process or disease.','metastasis':'Cancer spreading to another body part.','comorbidity':'Another health condition a patient has.'},
+ AI:{'transformer':'A neural network design that focuses on relationships between tokens.','attention':'A method that helps a model focus on relevant parts of input.','embedding':'A numeric representation of text, images, or other data.','gradient':'A signal that tells a model how to adjust during learning.','loss function':'A score showing how wrong a model is.','benchmark':'A standard test used to compare systems.','fine-tuning':'Training an existing model on a more specific dataset.','reinforcement learning':'Learning by rewards and penalties.','dataset':'A collection of examples used for training or evaluation.','parameter':'A learned internal value of a model.'}
+};
+const i18n={English:'Respond in clear English.',Arabic:'Respond in Arabic. Use right-to-left friendly formatting.',French:'Respond in French.',Amharic:'Respond in Amharic.',Chinese:'Respond in Simplified Chinese.'};
+function addMsg(text,kind='bot'){const d=document.createElement('div');d.className='msg '+kind;if($('lang').value==='Arabic')d.classList.add('rtl');d.textContent=text;$('chatTab').appendChild(d);$('chatTab').scrollTop=$('chatTab').scrollHeight;}
+function setStatus(kind,text){$('statusDot').className='dot '+(kind||'');$('statusText').textContent=text;}
+function safeName(n){return n.replace(/\.pdf$/i,'').replace(/[_-]+/g,' ').slice(0,90)}
+function bytesToBase64(bytes){let binary='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+chunk));}return btoa(binary)}
+async function makePaper(file){const buf=await file.arrayBuffer();const bytes=new Uint8Array(buf);let glimpse='';for(let i=0;i<Math.min(bytes.length,90000);i++){const c=bytes[i];glimpse += (c>=32&&c<=126)||c===10||c===13 ? String.fromCharCode(c) : ' ';}glimpse=glimpse.replace(/\s+/g,' ').slice(0,6000);return {name:file.name,file,url:URL.createObjectURL(file),bytes,size:file.size,base64:bytesToBase64(bytes),selected:true,domain:$('domain').value,glimpse};}
+async function handleFiles(files){let added=0;for(const file of [...files]){if(file.type!=='application/pdf' && !file.name.toLowerCase().endsWith('.pdf'))continue;if(file.size>MAX_INLINE_PDF_BYTES){addMsg(`Skipped ${file.name}: file is too large for inline PDF mode (${Math.round(file.size/1024/1024)} MB).`);continue;}state.papers.push(await makePaper(file));added++;}if(state.active<0&&state.papers.length)openPaper(0);renderPapers();if(added)addMsg(`Loaded ${added} PDF(s). Drag-and-drop and click-to-browse are both enabled. Gemini will read the actual PDFs when you ask or simplify.`)}
+function renderPapers(){const q=$('paperSearch').value.toLowerCase();$('paperList').innerHTML='';state.papers.forEach((p,i)=>{if(!p.name.toLowerCase().includes(q))return;const div=document.createElement('div');div.className='paper '+(i===state.active?'active':'');div.innerHTML=`<div class="row"><input type="checkbox" ${p.selected?'checked':''} data-sel="${i}" aria-label="Select ${safeName(p.name)} for chat"><button data-open="${i}" style="flex:1;text-align:left"><div class="paper-title">${safeName(p.name)}</div><div class="tiny">${(p.size/1024/1024).toFixed(1)} MB · ${p.domain}</div></button></div>`;$('paperList').appendChild(div);});}
+function openPaper(i){state.active=i;const p=state.papers[i];$('viewerTitle').textContent=safeName(p.name);$('viewerMeta').textContent=`${p.domain} · selected for chat: ${p.selected?'yes':'no'} · ${(p.size/1024/1024).toFixed(1)} MB`;$('viewerPane').className='';$('viewerPane').innerHTML=`<iframe title="PDF viewer" src="${p.url}"></iframe>`;renderPapers();}
+$('drop').onclick=e=>{ if(e.target.id!=='fileInput') $('fileInput').click(); };
+$('fileInput').onchange=e=>handleFiles(e.target.files);
+['dragenter','dragover'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();$('drop').classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();$('drop').classList.remove('drag');}));
+$('drop').addEventListener('drop',e=>handleFiles(e.dataTransfer.files));
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
+$('paperList').onclick=e=>{const s=e.target.closest('[data-sel]');const o=e.target.closest('[data-open]');if(s){state.papers[+s.dataset.sel].selected=s.checked;renderPapers()} if(o)openPaper(+o.dataset.open)};
+$('selectAll').onchange=e=>{state.papers.forEach(p=>p.selected=e.target.checked);renderPapers()};$('paperSearch').oninput=renderPapers;$('theme').onchange=e=>document.body.dataset.theme=e.target.value;
+$('prevBtn').onclick=()=>{if(state.papers.length)openPaper(Math.max(0,state.active-1))};$('nextBtn').onclick=()=>{if(state.papers.length)openPaper(Math.min(state.papers.length-1,state.active+1))};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.tabpane').forEach(p=>p.style.display='none');$(b.dataset.tab).style.display=b.dataset.tab==='chatTab'?'flex':'block'});
+function selectedPapers(){return state.papers.filter(p=>p.selected)}
+function pdfParts(papers){const parts=[];papers.forEach((p,i)=>{parts.push({text:`Document ${i+1}: ${p.name}`});parts.push({inline_data:{mime_type:'application/pdf',data:p.base64}});});return parts;}
+async function callGemini(text,papers=[]){const key=$('apiKey').value.trim();if(!key)throw new Error('Missing Gemini API key');const parts=[...pdfParts(papers),{text}];const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemInstruction:{parts:[{text:'You are arXivGPT, a careful research paper explainer. When PDFs are supplied, answer from the PDFs first and cite document name plus page number whenever visible or inferable. If the answer is not found in the documents, say so, then provide a clearly labelled Agentic fallback general explanation. For medicine, provide education only and avoid diagnosis or treatment instructions.'}]},contents:[{parts}],generationConfig:{temperature:.2,maxOutputTokens:3000}})});if(!res.ok)throw new Error(await res.text());const data=await res.json();return data.candidates?.[0]?.content?.parts?.map(p=>p.text).join('\n')||'No response text returned.'}
+function localAnswer(q,general=false){const ctx=selectedPapers().map(p=>`### ${p.name}\n${p.glimpse}`).join('\n');if(!ctx&&!general)return 'Please upload and select at least one PDF first.';let hits=[];q.toLowerCase().split(/\W+/).filter(w=>w.length>4).forEach(w=>{const m=ctx.match(new RegExp(`.{0,90}${w}.{0,140}`,'i'));if(m)hits.push(m[0])});if(hits.length)return `Local fallback found possible raw-text matches, but reliable PDF understanding requires Gemini PDF-native mode.\n\n${hits.slice(0,3).map(h=>'• '+h.trim()).join('\n')}\n\nAdd or test a Gemini key, then ask again.`;return general?'Agentic fallback: I cannot confirm this from the uploaded PDFs without a working Gemini key, so only a general explanation can be provided.':'I could not read enough document evidence locally. Please use a Gemini key so the app can send the actual PDFs to Gemini.'}
+$('testKey').onclick=async()=>{try{setStatus('warn','Testing…');await callGemini('Reply with exactly: connected');setStatus('ok','Gemini connected')}catch(e){setStatus('', 'Connection failed');addMsg('Connection test failed: '+e.message)}};
+$('askBtn').onclick=async()=>{const q=$('question').value.trim();if(!q)return;const papers=selectedPapers();addMsg(q,'user');if(!papers.length)return addMsg('Please select at least one uploaded PDF.');const prompt=`Language: ${$('lang').value}. ${i18n[$('lang').value]}\nDomain mode: ${$('domain').value}.\nQuestion: ${q}\n\nAnswer with: 1) direct answer, 2) evidence bullets with document names and page references, 3) beginner explanation, 4) uncertainty/limitations. If not found in the PDFs, say not found and then provide Agentic fallback.`;try{setStatus('warn','Gemini reading PDFs…');const ans=await callGemini(prompt,papers);setStatus('ok','Gemini connected');addMsg(ans)}catch(e){setStatus('', 'Local fallback');addMsg(localAnswer(q,false)+'\n\nError: '+e.message)}};
+$('fallbackBtn').onclick=async()=>{const q=$('question').value.trim()||'Explain this topic simply.';addMsg(q+' (general fallback)','user');try{const ans=await callGemini(`Language: ${$('lang').value}. ${i18n[$('lang').value]} Provide a beginner-friendly general explanation, clearly labelled Agentic fallback, for: ${q}`,[]);addMsg(ans)}catch(e){addMsg(localAnswer(q,true)+'\n\nError: '+e.message)}};
+$('summBtn').onclick=async()=>{if(state.active<0)return addMsg('Select a paper first.');const p=state.papers[state.active];addMsg('Simplify: '+p.name,'user');const prompt=`${i18n[$('lang').value]} Simplify this ${$('domain').value} paper for beginners. Include: 1) one-sentence takeaway, 2) why it matters, 3) methods in plain language, 4) key findings with page citations, 5) limitations, 6) short glossary. Use the PDF itself, not raw encoded text.`;try{setStatus('warn','Gemini reading PDF…');addMsg(await callGemini(prompt,[p]));setStatus('ok','Gemini connected')}catch(e){setStatus('', 'Local fallback');addMsg(`Could not run PDF-native summary. Add/test a Gemini key.\n\nError: ${e.message}`)}};
+$('glossBtn').onclick=async()=>{const papers=selectedPapers();$('glossary').innerHTML='<p class="tiny">Generating…</p>';try{const ans=await callGemini(`${i18n[$('lang').value]} Extract 12-20 domain-specific glossary terms from the supplied PDFs. For each term give: term, beginner definition, document/page cite if visible. Domain ${$('domain').value}.`,papers);$('glossary').innerHTML='<dd style="white-space:pre-wrap">'+ans.replace(/[<>]/g,'')+'</dd>'}catch(e){const ctx=papers.map(p=>p.glimpse.toLowerCase()).join(' ');const dom=$('domain').value;let html='';Object.entries(dictionaries[dom]).forEach(([term,def])=>{const count=(ctx.match(new RegExp(term,'g'))||[]).length;if(count)html+=`<dt>${term} <span class="pill">${count}</span></dt><dd>${def}</dd>`});$('glossary').innerHTML=html||'<p class="tiny">No local glossary terms detected. Connect Gemini for PDF-native extraction.</p>'}};
+$('citeBtn').onclick=async()=>{const p=state.papers[state.active];if(!p)return;$('refs').innerHTML='<li class="tiny">Extracting…</li>';try{const ans=await callGemini(`${i18n[$('lang').value]} Find the bibliography/references in this PDF. Return numbered references and, where possible, mention pages/sections in the paper that cite them.`,[p]);$('refs').innerHTML='<li style="white-space:pre-wrap">'+ans.replace(/[<>]/g,'')+'</li>'}catch(e){$('refs').innerHTML='<li class="tiny">Connect Gemini to extract references from the actual PDF. Local raw extraction is not reliable.</li>'}};
+addMsg('Welcome to arXivGPT MVP v327. Fixes included: real drag-and-drop upload, improved high-contrast Simplify button, and Gemini PDF-native reading instead of raw PDF byte text. Upload PDFs, add/test your Gemini key, then ask or simplify.');
+</script>
+</body>
+</html>
